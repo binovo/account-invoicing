@@ -23,14 +23,28 @@ class AccountInvoice(models.Model):
         for rec in self:
             if rec.supplier_invoice_number and\
                     rec.type in ('in_invoice', 'in_refund'):
-                same_supplier_inv_num = rec.search([
-                    ('commercial_partner_id', '=',
-                     rec.commercial_partner_id.id),
-                    ('type', 'in', ('in_invoice', 'in_refund')),
-                    ('supplier_invoice_number',
-                     '=ilike', rec.supplier_invoice_number),
-                    ('id', '!=', rec.id)
-                ], limit=1)
+                date_invoice = rec.date_invoice
+                if date_invoice:
+                    invoice_year = date_invoice.year
+                    same_supplier_inv_num = rec.search([
+                        ("date_invoice", ">=", "%s-01-01" % invoice_year),
+                        ("date_invoice", "<=", "%s-12-31" % invoice_year),
+                        ('commercial_partner_id', '=',
+                         rec.commercial_partner_id.id),
+                        ('type', 'in', ('in_invoice', 'in_refund')),
+                        ('supplier_invoice_number',
+                         '=ilike', rec.supplier_invoice_number),
+                        ('id', '!=', rec.id)
+                    ], limit=1)
+                else:
+                    same_supplier_inv_num = rec.search([
+                        ('commercial_partner_id', '=',
+                         rec.commercial_partner_id.id),
+                        ('type', 'in', ('in_invoice', 'in_refund')),
+                        ('supplier_invoice_number',
+                         '=ilike', rec.supplier_invoice_number),
+                        ('id', '!=', rec.id)
+                    ], limit=1)
                 if same_supplier_inv_num:
                     raise ValidationError(_(
                         "The invoice/refund with supplier invoice number '%s' "
